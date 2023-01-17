@@ -1,0 +1,2 @@
+SyntaxError in line 32 of /groups/wyattgrp/users/amunzur/hla_pipeline/workflow/snakefile:
+unexpected EOF while parsing (snakefile, line 32)

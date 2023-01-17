@@ -1,0 +1,9 @@
+---
+PATH_hg38: "/groups/wyattgrp/reference/hg38/hg38.fa"
+PATH_gcwig: "/groups/wyattgrp/users/amunzur/hla_pipeline/resources/genome_gc50.wig.gz"
+DIR_fastq: "/groups/wyattgrp/users/amunzur/hla_pipeline/results/data/fq"
+DIR_fastqc_raw: "/groups/wyattgrp/users/amunzur/hla_pipeline/results/reports/fastqc_raw"
+DIR_fastqc_processed: "/groups/wyattgrp/users/amunzur/hla_pipeline/results/reports/fastqc_processed"
+DIR_bams: "/groups/wyattgrp/users/amunzur/hla_pipeline/results/data/bam"
+DIR_metrics: "/groups/wyattgrp/users/amunzur/hla_pipeline/results/metrics"
+DIR_results: "/groups/wyattgrp/users/amunzur/hla_pipeline/results"

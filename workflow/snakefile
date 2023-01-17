@@ -1,0 +1,127 @@
+import pandas as pd
+import re
+import os
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+# input functions 
+def get_WBC_bam(wildcard):
+    wildcard = wildcard
+    paired_samples = pd.read_csv("/groups/wyattgrp/users/amunzur/hla_pipeline/resources/sample_list_table.tsv", "\t", names = ["patient_id", "normalname", "tumorname", "wbcbam", "tumorbam"])
+    paired_samples = paired_samples[["wbcbam", "tumorbam"]]
+    
+    mask = paired_samples["tumorbam"] == wildcard
+    wbcbam= paired_samples["wbcbam"][mask].tolist()[0]
+    
+    PATH_complete = "/groups/wyattgrp/users/amunzur/hla_pipeline/results/data/bam/sorted/" + wbcbam
+    return(PATH_complete)
+
+def get_WBC_chrom(wildcard):
+    '''
+    Given a tumor name as a wildcard without the ".bam" extension and a chromosome name, return the path to the matching wbc chromosome bam path.
+    '''
+    print(wildcard)
+    chrom="1"
+    DIR_bams="/groups/wyattgrp/users/amunzur/hla_pipeline/results/data/bam"
+    wildcard = re.escape(wildcard)
+    # wildcard=wildcard + ".bam"
+    paired_samples = pd.read_csv("/groups/wyattgrp/users/amunzur/hla_pipeline/resources/sample_list_table.tsv", "\t", names = ["patient_id", "normalname", "tumorname", "wbcbam", "tumorbam"])
+    paired_samples = paired_samples[["wbcbam", "tumorbam"]]
+    mask = paired_samples["tumorbam"] == wildcard
+    wbcname = paired_samples["wbcbam"][mask].tolist()[0].split(".")[0]
+    wbc_path = os.path.join(DIR_bams, "split", wbcname, wbcname + ".REF_chr" + chrom +".bam")
+    outlist.append(wbc_path)
+    print(wildcard)
+    print(wbc_path)
+    print(" ")
+    return(wbc_path)
+
+workdir: "/groups/wyattgrp/users/amunzur/hla_pipeline"
+configfile: "config/config.yaml"
+samples = pd.read_csv("/groups/wyattgrp/users/amunzur/hla_pipeline/resources/sample_list.tsv", sep="\t")["sample_names"].tolist()
+
+pair1 = [sample + "_1" for sample in samples]
+pair2 = [sample + "_2" for sample in samples]
+all_pairs = pair1 + pair2
+
+cfDNA_samples = list(filter(lambda x: "cfDNA" in x, samples))
+WBC_samples = list(filter(lambda x: "WBC" in x, samples))
+
+# wildcard_constraints:
+#     wildcard='|'.join([re.escape(x) for x in cfDNA_samples]),
+
+DIR_fastqc_raw = config["DIR_fastqc_raw"]
+PATH_hg38 = config["PATH_hg38"]
+PATH_gcwig = config["PATH_gcwig"]
+DIR_fastq = config["DIR_fastq"]
+DIR_fastqc_processed = config["DIR_fastqc_processed"]
+DIR_bams = config["DIR_bams"]
+DIR_metrics = config["DIR_metrics"]
+DIR_results = config["DIR_results"]
+
+# target files for rule all
+fastqc_raw = expand(DIR_fastqc_raw + "/{wildcard}_fastqc.html", wildcard=all_pairs)
+mask_fastq = expand(DIR_fastq + "/masked/{wildcard}.fq", wildcard=all_pairs)
+trim_fastq = [
+    expand(DIR_fastq + "/trimmed/{wildcard}_1.fq", wildcard=samples),
+    expand(DIR_fastq + "/trimmed/{wildcard}_2.fq", wildcard=samples),
+]
+mapBAM = expand(DIR_bams + "/raw/{wildcard}.bam", wildcard=samples)
+addRG = expand(DIR_bams + "/rg/{wildcard}.bam", wildcard=samples)
+fixmate = expand(DIR_bams + "/fixmate/{wildcard}.bam", wildcard=samples)
+mark_duplicates = expand(DIR_bams + "/markDuplicates/{wildcard}.bam", wildcard=samples)
+subset_to_proper_pairs = expand(DIR_bams + "/proper_pair/{wildcard}.bam", wildcard=samples)
+sort_subseted_to_proper_pairs = expand(DIR_bams + "/sorted/{wildcard}.bam", wildcard=samples)
+index_sorted = expand(DIR_bams + "/sorted/{wildcard}.bam.bai", wildcard=samples)
+filter_bam = expand(DIR_bams + "/subsetted/{wildcard}.bam", wildcard=samples)
+sort_filtered = expand(DIR_bams + "/subsetted_sorted/{wildcard}.bam", wildcard=samples)
+index_filtered = expand(DIR_bams + "/subsetted_sorted/{wildcard}.bam.bai", wildcard=samples)
+split = expand(DIR_bams + "/subsetted_sorted/{wildcard}.REF_chr{chr_values}.bam", wildcard=samples, chr_values=["1", "2"]) # no need to write them all
+move_split = expand(DIR_bams + "/split/{wildcard}/{wildcard}.REF_chr{chr_values}.bam", wildcard=samples, chr_values=["1", "2"])
+index_split_bams = expand(DIR_bams + "/split/{wildcard}/{wildcard}.REF_chr{chr_values}.bam.bai", wildcard=samples, chr_values=["1", "2"])
+
+# sequenza
+run_sequenza_utils_per_chr  = expand(DIR_results + "/sequenza/{wildcard}/{wildcard}_chr1.seqz", wildcard=cfDNA_samples)
+cat_sequenza_utils = expand(DIR_results + "/sequenza/{wildcard}/{wildcard}.seqz", wildcard=cfDNA_samples)
+run_sequenza_R = expand(DIR_results + "/sequenza/{wildcard}" + "{wildcard}_alternative_solutions.txt", wildcard=cfDNA_samples)
+
+# HLA polysolver
+polysolver_shell_call_hla_type = expand(DIR_results + "/polysolver/hla_types/{wildcard}/winners.hla.txt", wildcard=WBC_samples)
+polysolver_shell_call_hla_mutations_from_type = expand(DIR_results + "/polysolver/hla_mutations/{wildcard}.bam", wildcard=cfDNA_samples)
+
+# prepare LOHHLA inputs
+# prepare_ploidy_estimates = expand() # reformat _alternative_solutions from sequenza in a format LOHHLA will accept
+
+rule all:
+    input:
+        # fastqc_raw,
+        # mask_fastq,
+        # trim_fastq,
+        # mapBAM,
+        # addRG,
+        # fixmate,
+        # mark_duplicates,
+        # subset_to_proper_pairs,
+        # sort_subseted_to_proper_pairs,
+        # polysolver_shell_call_hla_type,
+        # polysolver_shell_call_hla_mutations_from_type,
+        # index_sorted,
+        # filter_bam,
+        # sort_filtered,
+        # index_filtered,
+        # split,
+        # move_split,
+        # index_split_bams,
+        run_sequenza_utils_per_chr,
+        # cat_sequenza_utils,
+        # run_sequenza_R,
+        # polysolver_shell_call_hla_type,
+        # polysolver_shell_call_hla_mutations_from_type
+
+##### Modules #####
+include: "rules/process_fastq.smk"
+include: "rules/process_bams.smk"
+# include: "rules/run_hla_tools.smk"
+include: "rules/run_sequenza.smk"
+

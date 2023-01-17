@@ -1,0 +1,7 @@
+__default__:
+  partition: "high"
+  cpus: "{threads}"
+  mem: "200000"
+  time: 2:00:00
+  output: "results/logs_slurm/{rule}/{wildcards.wildcard}.log"
+  nodes: 1
