@@ -56,20 +56,9 @@ rule markDuplicates:
             "picard -Xmx40g MarkDuplicates  I={input} O={output.bam} M={output.metrics}"
         )
 
-rule proper_pairs:
+rule sort_markDuplicates:
     input:
         DIR_bams + "/markDuplicates/{wildcard}.bam"
-    output:
-        temp(DIR_bams + "/proper_pair/{wildcard}.bam")
-    threads: 12
-    run:
-        shell(
-            "sambamba view {input} -F 'proper_pair' -t {threads} -f bam -l 0 -o {output}"
-        )
-
-rule sort_subseted_to_proper_pairs:
-    input:
-        DIR_bams + "/proper_pair/{wildcard}.bam"
     output:
         DIR_bams + "/sorted/{wildcard}.bam"
     threads: 12
@@ -97,7 +86,7 @@ rule filter_bam:
         bam=DIR_bams + "/subsetted/{wildcard}.bam",
     run:
         shell(
-            "samtools view {input.bam} chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY -bh > {output.bam}"
+            "samtools view {input.bam} chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chr20 chr21 chr22 chrX chrY chr6_apd_hap1 chr6_cox_hap2 chr6_dbb_hap3 chr6_mann_hap4 chr6_mcf_hap5 chr6_qbl_hap6 chr6_ssto_hap7 -bh > {output.bam}"
             )
 
 rule sort_filtered:
