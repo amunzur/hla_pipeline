@@ -4,7 +4,6 @@ import os
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-
 # input functions 
 def get_WBC_bam(wildcard):
     wildcard = wildcard
@@ -37,6 +36,38 @@ def get_WBC_chrom(wildcard):
     print(" ")
     return(wbc_path)
 
+def return_split_chroms_tumor(tumor_name): 
+    '''
+    Given a tumor name (without the .bam extension), return a list of path to the split chromosomes produced in the split_bam rule.
+    '''
+    DIR_bams="/groups/wyattgrp/users/amunzur/hla_pipeline/results/data/bam"
+    DIR_bams + "/split/${tumor_name}/{tumor_name}.REF_chr1.bam",
+    paths_list = []
+
+    for x in ['REF_chr{}'.format(x) for x in range(1, 23)]:
+        sample = ".".join([tumor_name, x, "bam"])
+        sample_index = ".".join([tumor_name, x, "bam", "bai"])
+        sample_path = os.path.join(DIR_bams, "split", tumor_name, sample)
+        sample_index_path = os.path.join(DIR_bams, "split", tumor_name, sample_index)
+        paths_list.append(sample_path)
+        paths_list.append(sample_index_path)
+
+    return(paths_list)
+
+def return_seqz_per_chrom(tumor_name, DIR_results):
+    '''
+    Given a tumor name, return the paths to the seqz files generated for each chromosome.
+    '''
+    DIR_seqz = os.path.join(DIR_results, tumor_name)
+    paths_list = []
+
+    for x in ['REF_chr{}'.format(x) for x in range(1, 23)]:
+        sample = ".".join([tumor_name, x, "seqz"])
+        sample_path = os.path.join(DIR_results, "sequenza", tumor_name, sample)
+        paths_list.append(sample_path)
+
+    return(paths_list)
+
 workdir: "/groups/wyattgrp/users/amunzur/hla_pipeline"
 configfile: "config/config.yaml"
 samples = pd.read_csv("/groups/wyattgrp/users/amunzur/hla_pipeline/resources/sample_list.tsv", sep="\t")["sample_names"].tolist()
@@ -59,6 +90,8 @@ DIR_fastqc_processed = config["DIR_fastqc_processed"]
 DIR_bams = config["DIR_bams"]
 DIR_metrics = config["DIR_metrics"]
 DIR_results = config["DIR_results"]
+DIR_resources = config["DIR_resources"]
+DIR_temp = config["DIR_temp"]
 
 # target files for rule all
 fastqc_raw = expand(DIR_fastqc_raw + "/{wildcard}_fastqc.html", wildcard=all_pairs)
@@ -91,7 +124,10 @@ polysolver_shell_call_hla_type = expand(DIR_results + "/polysolver/hla_types/{wi
 polysolver_shell_call_hla_mutations_from_type = expand(DIR_results + "/polysolver/hla_mutations/{wildcard}.bam", wildcard=cfDNA_samples)
 
 # prepare LOHHLA inputs
-# prepare_ploidy_estimates = expand() # reformat _alternative_solutions from sequenza in a format LOHHLA will accept
+prepare_ploidy_estimates = expand(DIR_results + "/sequenza/{wildcard}/{wildcard}_alternative_solutions_LOHHLA.txt", wildcard=cfDNA_samples)
+get_hla_fasta=expand(DIR_resources+"/lohhla_fasta/{wildcard}/hla_fasta.fa.fai", wildcard=WBC_samples)
+tumorbam_symlinks=expand(DIR_results + "/data/bam/lohhla_bams/{wildcard}/{wildcard}.bam", wildcard=cfDNA_samples)
+wbcbam_symlinks=expand(DIR_results + "/data/bam/lohhla_bams/{wildcard}/{wildcard}.bam", wildcard=WBC_samples)
 
 rule all:
     input:
@@ -113,15 +149,18 @@ rule all:
         # split,
         # move_split,
         # index_split_bams,
-        run_sequenza_utils_per_chr,
-        # cat_sequenza_utils,
+        # run_sequenza_utils_per_chr,
+        cat_sequenza_utils,
         # run_sequenza_R,
+        # prepare_ploidy_estimates,
         # polysolver_shell_call_hla_type,
         # polysolver_shell_call_hla_mutations_from_type
+        # get_hla_fasta,
+        # tumorbam_symlinks,
+        # 
 
 ##### Modules #####
 include: "rules/process_fastq.smk"
 include: "rules/process_bams.smk"
-# include: "rules/run_hla_tools.smk"
+include: "rules/run_hla_tools.smk"
 include: "rules/run_sequenza.smk"
-
